@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
-import PortalAuth from './components/PortalAuth';
+import { portalRole, loginUrl, readSession, clearSession } from './services/portal';
 import Dashboard from './components/Dashboard';
 import PegawaiList from './components/PegawaiList';
 import AbsensiRadius from './components/AbsensiRadius';
@@ -50,18 +50,9 @@ export default function App() {
     return localStorage.getItem('sit_theme') || 'light';
   });
 
-  // Portal & Role State ('admin' | 'pegawai' | null for portal selector)
-  const [activePortal, setActivePortal] = useState(() => {
-    return localStorage.getItem('sit_active_portal') || null;
-  });
-  const currentRole = activePortal || 'admin';
-  const setCurrentRole = (role) => {
-    setActivePortal(role);
-    localStorage.setItem('sit_active_portal', role);
-  };
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(() => {
-    return localStorage.getItem('sit_logged_pegawai_id') || null;
-  });
+  const currentRole = portalRole();
+  const [activePortal, setActivePortal] = useState(() => readSession(currentRole)?.role || null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(() => readSession(currentRole)?.employeeId || null);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'pegawai' | 'absensi' | 'cuti' | 'gaji'
@@ -95,7 +86,7 @@ export default function App() {
   const [dbStatus, setDbStatus] = useState(getDatabaseStatus());
 
   // Derived current active employee
-  const currentEmployee = employees.find(e => e.id === selectedEmployeeId) || employees[0] || null;
+  const currentEmployee = employees.find(e => e.id === selectedEmployeeId) || (currentRole === 'admin' ? employees[0] : null) || null;
   const setCurrentEmployee = (emp) => setSelectedEmployeeId(emp?.id || null);
 
   // Set Theme on root element
@@ -124,19 +115,26 @@ export default function App() {
         getKonfigurasiKantor()
       ]);
 
-      setEmployees(p || []);
-      setAttendanceList(a || []);
-      setLeaveList(c || []);
-      setSalaryList(g || []);
+      if (currentRole === 'pegawai' && activePortal && !(p || []).some(e => e.id === selectedEmployeeId)) {
+        clearSession(currentRole);
+        setActivePortal(null);
+        return;
+      }
+      const ownRecords = rows => currentRole === 'admin' ? (rows || []) : (rows || []).filter(row => row.pegawai_id === selectedEmployeeId);
+      setEmployees(currentRole === 'admin' ? (p || []) : (p || []).filter(e => e.id === selectedEmployeeId));
+      setAttendanceList(ownRecords(a));
+      setLeaveList(ownRecords(c));
+      setSalaryList(ownRecords(g));
       if (k) setOfficeConfig(k);
       setDbStatus(getDatabaseStatus());
     } catch (err) {
       console.error('Error loading data:', err);
     }
-  }, []);
+  }, [currentRole, activePortal, selectedEmployeeId]);
 
   // Initial Load & Realtime subscription
   useEffect(() => {
+    if (!activePortal) return;
     loadAllData();
 
     // Dengarkan event sinkronisasi real-time
@@ -155,7 +153,7 @@ export default function App() {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [loadAllData]);
+  }, [loadAllData, activePortal]);
 
   // Action Wrappers
   const handleAddEmployee = async (data) => {
@@ -221,9 +219,9 @@ export default function App() {
   // Otomatis arahkan ke halaman login terpisah (login.html) jika belum login
   useEffect(() => {
     if (!activePortal) {
-      window.location.replace('/login.html');
+      window.location.replace(loginUrl(currentRole));
     }
-  }, [activePortal]);
+  }, [activePortal, currentRole]);
 
   // Jika belum login, tampilkan layar pengalihan ke halaman login
   if (!activePortal) {
@@ -235,9 +233,9 @@ export default function App() {
             Menuju Halaman Login...
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
-            Anda belum masuk ke akun. Mengalihkan secara otomatis ke halaman login terpisah (<code style={{ color: 'var(--primary-600)', fontWeight: 700 }}>login.html</code>)...
+            Anda belum masuk ke akun. Mengalihkan secara otomatis ke halaman login terpisah (<code style={{ color: 'var(--primary-600)', fontWeight: 700 }}>{loginUrl(currentRole)}</code>)...
           </p>
-          <a href="/login.html" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700, padding: '12px 24px', borderRadius: 12 }}>
+          <a href={loginUrl(currentRole)} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700, padding: '12px 24px', borderRadius: 12 }}>
             <span>Buka Halaman Login</span>
             <ArrowRight size={17} />
           </a>
@@ -253,7 +251,6 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         currentRole={currentRole}
-        setCurrentRole={setCurrentRole}
         currentEmployee={currentEmployee}
         setCurrentEmployee={setCurrentEmployee}
         employees={employees}
@@ -271,9 +268,8 @@ export default function App() {
         onLogoutPortal={() => {
           setActivePortal(null);
           setSelectedEmployeeId(null);
-          localStorage.removeItem('sit_active_portal');
-          localStorage.removeItem('sit_logged_pegawai_id');
-          window.location.href = '/login.html';
+          clearSession(currentRole);
+          window.location.href = loginUrl(currentRole);
         }}
       />
 
@@ -302,7 +298,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'pegawai' && (
+          {currentRole === 'admin' && activeTab === 'pegawai' && (
             <PegawaiList 
               employees={employees}
               onAddEmployee={handleAddEmployee}
@@ -362,7 +358,7 @@ export default function App() {
       )}
 
       {/* Modals */}
-      {isSettingsModalOpen && (
+      {currentRole === 'admin' && isSettingsModalOpen && (
         <PengaturanKantorModal 
           officeConfig={officeConfig}
           onSaveConfig={handleSaveOfficeConfig}
@@ -370,7 +366,7 @@ export default function App() {
         />
       )}
 
-      {isDbModalOpen && (
+      {currentRole === 'admin' && isDbModalOpen && (
         <DatabaseSettingsModal 
           dbStatus={dbStatus}
           onClose={() => setIsDbModalOpen(false)}
@@ -378,7 +374,7 @@ export default function App() {
         />
       )}
 
-      {isDeployModalOpen && (
+      {currentRole === 'admin' && isDeployModalOpen && (
         <PanduanDeployModal 
           onClose={() => setIsDeployModalOpen(false)}
         />

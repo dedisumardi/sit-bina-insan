@@ -113,3 +113,12 @@ npx vercel
 ---
 
 *Dikembangkan untuk Sekolah Islam Terpadu (SIT) Bina Insan.*
+
+## Halaman pegawai dan admin
+
+- Login pegawai: `/login-pegawai.html`, dashboard: `/pegawai.html`.
+- Login admin: `/login-admin.html`, dashboard: `/admin.html`.
+- `/` dan `/login.html` menjadi pintu masuk pegawai.
+- Sesi setiap portal disimpan terpisah di sessionStorage. Keluar kembali ke login portal yang sama.
+- Menu database, deployment, dan konfigurasi kantor hanya tersedia bagi admin.
+- Pemisahan ini mengatur halaman dan sesi antarmuka; autentikasi database tetap menggunakan mekanisme proyek yang ada.

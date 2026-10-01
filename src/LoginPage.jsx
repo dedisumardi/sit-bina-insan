@@ -1,147 +1,75 @@
 import React, { useState, useEffect } from 'react';
-import PortalAuth from './components/PortalAuth';
-import DatabaseSettingsModal from './components/DatabaseSettingsModal';
-import { getPegawai, getDatabaseStatus } from './services/db';
-import { CheckCircle2, ArrowRight, UserCheck, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { ArrowRight, UserCheck, ShieldCheck, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { authenticatePegawai, authenticateAdmin } from './services/db';
+import { portalRole, dashboardUrl, readSession, saveSession } from './services/portal';
 
 export default function LoginPage() {
-  const [employees, setEmployees] = useState([]);
-  const [dbStatus, setDbStatus] = useState(getDatabaseStatus());
-  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
-
-  // Theme state
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('sit_theme') || 'light';
-  });
-
-  // Check existing session
-  const [existingSession, setExistingSession] = useState(null);
-
+  const role = portalRole();
+  const isAdmin = role === 'admin';
+  const [year] = useState(() => new Date().getFullYear());
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [theme, setTheme] = useState(() => localStorage.getItem('sit_theme') || 'light');
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('sit_theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  useEffect(() => {
-    async function loadInitial() {
-      try {
-        const emps = await getPegawai();
-        setEmployees(emps || []);
-        setDbStatus(getDatabaseStatus());
-
-        const savedPortal = localStorage.getItem('sit_active_portal');
-        const savedEmpId = localStorage.getItem('sit_logged_pegawai_id');
-        if (savedPortal) {
-          const loggedEmp = emps.find(e => e.id === savedEmpId);
-          setExistingSession({
-            portal: savedPortal,
-            employee: loggedEmp
-          });
-        }
-      } catch (err) {
-        console.error('Error loading employees on login page:', err);
-      }
-    }
-    loadInitial();
-  }, []);
-
-  const showToast = (title, message) => {
-    setToastMessage({ title, message, id: Date.now() });
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
-  const handleSelectPortal = (portal, emp) => {
-    localStorage.setItem('sit_active_portal', portal);
-    if (emp) {
-      localStorage.setItem('sit_logged_pegawai_id', emp.id);
-      showToast('Login Berhasil', `Ahlan wa Sahlan, ${emp.nama}! Mengalihkan ke dashboard...`);
-    } else {
-      localStorage.removeItem('sit_logged_pegawai_id');
-      showToast('Login Berhasil', 'Ahlan wa Sahlan! Mengalihkan ke Panel Administrator...');
-    }
-
-    // Redirect to main application dashboard
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 600);
-  };
-
-  return (
-    <div className="app-container" style={{ minHeight: '100vh', position: 'relative' }}>
-      {/* Top Bar Floating Buttons (Theme & Direct Dashboard if logged in) */}
-      <div style={{ 
-        position: 'absolute', 
-        top: 20, 
-        right: 24, 
-        zIndex: 20, 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: 10 
-      }}>
-        {existingSession && (
-          <button
-            type="button"
-            className="btn btn-sm btn-primary"
-            onClick={() => { window.location.href = '/'; }}
-            style={{ fontWeight: 700, gap: 6, boxShadow: 'var(--shadow-md)' }}
-          >
-            {existingSession.portal === 'admin' ? <ShieldCheck size={15} /> : <UserCheck size={15} />}
-            <span>Lanjut ke Dashboard ({existingSession.portal === 'admin' ? 'Admin' : existingSession.employee?.nama?.split(',')[0] || 'Pegawai'})</span>
-            <ArrowRight size={14} />
-          </button>
-        )}
-
-        <button
-          type="button"
-          className="theme-toggle-btn"
-          onClick={toggleTheme}
-          style={{ width: 36, height: 36, background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}
-          title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-        >
-          {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+    document.title = 'Login ' + (isAdmin ? 'Admin' : 'Pegawai') + ' — SIT Bina Insan';
+  }, [theme, isAdmin]);
+  async function submit(event) {
+    event.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const result = isAdmin ? await authenticateAdmin(identifier, password) : await authenticatePegawai(identifier, password);
+      if (!result.success) { setError(result.message); return; }
+      saveSession(role, result.employee);
+      window.location.assign(dashboardUrl(role));
+    } catch {
+      setError('Login belum berhasil. Silakan coba kembali.');
+    } finally { setLoading(false); }
+  }
+  return <div className="auth-portal-wrapper">
+    <div className="auth-bg-overlay" />
+    <div className="auth-portal-container" style={{ maxWidth: 520, width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <button className="theme-toggle-btn" type="button" aria-label="Ganti tema" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </div>
-
-      {/* Main Authentication Component */}
-      <PortalAuth 
-        employees={employees}
-        onSelectPortal={handleSelectPortal}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        dbStatus={dbStatus}
-        onOpenDbModal={() => setIsDbModalOpen(true)}
-      />
-
-      {/* Database Modal */}
-      {isDbModalOpen && (
-        <DatabaseSettingsModal 
-          dbStatus={dbStatus}
-          onClose={() => setIsDbModalOpen(false)}
-          onRefreshData={async () => {
-            const emps = await getPegawai();
-            setEmployees(emps || []);
-            setDbStatus(getDatabaseStatus());
-          }}
-        />
-      )}
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="toast-container">
-          <div className="toast">
-            <CheckCircle2 size={20} style={{ color: 'var(--primary-600)', flexShrink: 0 }} />
-            <div>
-              <strong style={{ display: 'block', fontSize: '0.85rem' }}>{toastMessage.title}</strong>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{toastMessage.message}</span>
-            </div>
+      <header className="auth-header">
+        <img src="/logo.jpg" alt="Logo SIT Bina Insan" className="auth-logo-img" />
+        <h1 className="auth-title">{isAdmin ? 'PORTAL ADMIN' : 'PORTAL PEGAWAI'}</h1>
+        <p className="auth-subtitle">SIT Bina Insan</p>
+      </header>
+      <section className={'portal-card ' + (isAdmin ? 'admin-card' : 'pegawai-card')}>
+        <div className="portal-card-top">
+          <div className={'portal-icon-box ' + (isAdmin ? 'admin-icon-box' : 'pegawai-icon-box')}>
+            {isAdmin ? <ShieldCheck size={32} /> : <UserCheck size={32} />}
           </div>
         </div>
-      )}
+        <h2 className="portal-card-title">{isAdmin ? 'Login Administrator' : 'Login Pegawai'}</h2>
+        <p className="portal-card-desc">{isAdmin ? 'Masuk untuk mengelola data pegawai, memantau absensi, dan memproses pengajuan.' : 'Masuk untuk melakukan presensi, mengajukan cuti, dan melihat informasi kepegawaian Anda.'}</p>
+        {error && <p role="alert" style={{ color: 'var(--color-danger)', marginBottom: 16 }}>{error}</p>}
+        <form onSubmit={submit} style={{ display: 'grid', gap: 18 }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" htmlFor="identifier">{isAdmin ? 'Username Admin' : 'NIP atau Email'}</label>
+            <input id="identifier" className="form-input" autoComplete="username" value={identifier} onChange={e => setIdentifier(e.target.value)} required />
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" htmlFor="password">Kata Sandi</label>
+            <div style={{ position: 'relative' }}>
+              <input id="password" className="form-input" type={visible ? 'text' : 'password'} autoComplete="current-password" style={{ paddingRight: 48 }} value={password} onChange={e => setPassword(e.target.value)} required />
+              <button type="button" aria-label={visible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'} onClick={() => setVisible(!visible)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', border: 0, background: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+            </div>
+          </div>
+          <button className={'btn btn-portal ' + (isAdmin ? 'btn-primary' : 'btn-success')} disabled={loading} type="submit">{loading ? 'Memverifikasi...' : isAdmin ? 'Masuk sebagai Admin' : 'Masuk sebagai Pegawai'}<ArrowRight size={18} /></button>
+        </form>
+        {readSession(role) && <a className="btn btn-secondary" style={{ marginTop: 16, width: '100%' }} href={dashboardUrl(role)}>Lanjut ke dashboard</a>}
+      </section>
+      <footer className="auth-footer"><p>© {year} SIT Bina Insan</p></footer>
     </div>
-  );
+  </div>;
 }

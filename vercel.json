@@ -7,8 +7,20 @@
       "destination": "/login.html"
     },
     {
-      "source": "/login.html",
-      "destination": "/login.html"
+      "source": "/login-pegawai",
+      "destination": "/login-pegawai.html"
+    },
+    {
+      "source": "/login-admin",
+      "destination": "/login-admin.html"
+    },
+    {
+      "source": "/pegawai",
+      "destination": "/pegawai.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
     },
     {
       "source": "/((?!assets|logo.jpg|.*\\..*).*)",

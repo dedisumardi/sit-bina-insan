@@ -68,7 +68,7 @@ export default function Topbar({
         <button 
           type="button" 
           className="realtime-pill" 
-          onClick={onOpenDbModal}
+          onClick={currentRole === 'admin' ? onOpenDbModal : undefined}
           style={{ cursor: 'pointer' }}
         >
           <span className="pulse-dot"></span>

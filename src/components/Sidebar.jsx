@@ -95,7 +95,7 @@ export default function Sidebar({
           <button 
             type="button" 
             className="sidebar-realtime-pill" 
-            onClick={onOpenDbModal}
+            onClick={isAdmin ? onOpenDbModal : undefined}
             title="Klik untuk konfigurasi Supabase Real-Time"
           >
             <span className="pulse-dot"></span>
@@ -258,6 +258,7 @@ export default function Sidebar({
             </>
           )}
 
+          {isAdmin && <>
           <button 
             type="button"
             className="sidebar-nav-item"
@@ -275,6 +276,7 @@ export default function Sidebar({
             <GithubIcon size={18} />
             <span className="nav-text">GitHub & Vercel</span>
           </button>
+          </>}
         </nav>
 
         {/* Sidebar Footer */}
@@ -302,7 +304,7 @@ export default function Sidebar({
             style={{ width: '100%', justifyContent: 'center', gap: 6, fontWeight: 700, color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.25)' }}
           >
             <LogOut size={14} />
-            <span>Keluar / Ganti Portal</span>
+            <span>Keluar</span>
           </button>
         </div>
       </aside>
