@@ -40,7 +40,8 @@ import {
   TrendingUp, 
   Bell,
   CheckCircle2,
-  Info
+  Info,
+  ArrowRight
 } from 'lucide-react';
 
 export default function App() {
@@ -217,38 +218,30 @@ export default function App() {
     showToast('Konfigurasi Disimpan', 'Titik koordinat dan radius sekolah berhasil diperbarui.');
   };
 
-  // If no portal is chosen, display the Portal Selection Screen
+  // Otomatis arahkan ke halaman login terpisah (login.html) jika belum login
+  useEffect(() => {
+    if (!activePortal) {
+      window.location.replace('/login.html');
+    }
+  }, [activePortal]);
+
+  // Jika belum login, tampilkan layar pengalihan ke halaman login
   if (!activePortal) {
     return (
-      <div className="app-container">
-        <PortalAuth 
-          employees={employees}
-          onSelectPortal={(portal, emp) => {
-            setActivePortal(portal);
-            localStorage.setItem('sit_active_portal', portal);
-            if (emp) {
-              setSelectedEmployeeId(emp.id);
-              localStorage.setItem('sit_logged_pegawai_id', emp.id);
-              showToast('Login Berhasil', `Ahlan wa Sahlan, ${emp.nama}! Anda berhasil login ke Portal Pegawai.`);
-            } else {
-              localStorage.removeItem('sit_logged_pegawai_id');
-              showToast('Login Berhasil', 'Ahlan wa Sahlan! Anda berhasil masuk sebagai Administrator.');
-            }
-            setActiveTab('dashboard');
-          }}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          dbStatus={dbStatus}
-          onOpenDbModal={() => setIsDbModalOpen(true)}
-        />
-
-        {isDbModalOpen && (
-          <DatabaseSettingsModal 
-            dbStatus={dbStatus}
-            onClose={() => setIsDbModalOpen(false)}
-            onRefreshData={loadAllData}
-          />
-        )}
+      <div className="app-container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app)' }}>
+        <div style={{ textAlign: 'center', padding: '40px 32px', maxWidth: 460, background: 'var(--bg-card)', borderRadius: 20, border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-lg)' }}>
+          <img src="/logo.jpg" alt="Logo SIT Bina Insan" style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 16, border: '3px solid var(--primary-500)', boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)' }} />
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8 }}>
+            Menuju Halaman Login...
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 24 }}>
+            Anda belum masuk ke akun. Mengalihkan secara otomatis ke halaman login terpisah (<code style={{ color: 'var(--primary-600)', fontWeight: 700 }}>login.html</code>)...
+          </p>
+          <a href="/login.html" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700, padding: '12px 24px', borderRadius: 12 }}>
+            <span>Buka Halaman Login</span>
+            <ArrowRight size={17} />
+          </a>
+        </div>
       </div>
     );
   }
@@ -280,7 +273,7 @@ export default function App() {
           setSelectedEmployeeId(null);
           localStorage.removeItem('sit_active_portal');
           localStorage.removeItem('sit_logged_pegawai_id');
-          showToast('Logout Berhasil', 'Anda telah keluar dari sesi akun.');
+          window.location.href = '/login.html';
         }}
       />
 

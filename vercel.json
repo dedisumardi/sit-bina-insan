@@ -1,8 +1,17 @@
 {
   "framework": "vite",
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/login.html",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/((?!assets|logo.jpg|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
