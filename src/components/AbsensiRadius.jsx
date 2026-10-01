@@ -193,7 +193,16 @@ export default function AbsensiRadius({
       ]);
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
     }
-  }, [userLocation, officeConfig]);
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        userMarkerRef.current = null;
+        circleRef.current = null;
+      }
+    };
+  }, [userLocation, officeConfig.latitude, officeConfig.longitude, officeConfig.radius_meter, officeConfig.nama_lokasi]);
 
   // Webcam Handler
   const startCamera = async () => {

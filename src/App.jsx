@@ -48,7 +48,7 @@ export default function App() {
 
   // Role & Active User
   const [currentRole, setCurrentRole] = useState('admin'); // 'admin' | 'pegawai'
-  const [currentEmployee, setCurrentEmployee] = useState(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'pegawai' | 'absensi' | 'cuti' | 'gaji'
@@ -79,6 +79,10 @@ export default function App() {
   // Database Connection Status
   const [dbStatus, setDbStatus] = useState(getDatabaseStatus());
 
+  // Derived current active employee
+  const currentEmployee = employees.find(e => e.id === selectedEmployeeId) || employees[0] || null;
+  const setCurrentEmployee = (emp) => setSelectedEmployeeId(emp?.id || null);
+
   // Set Theme on root element
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -94,7 +98,7 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Muat seluruh data dari DB layer
+  // Muat seluruh data dari DB layer (Stabil, tanpa dependensi melingkar)
   const loadAllData = useCallback(async () => {
     try {
       const [p, a, c, g, k] = await Promise.all([
@@ -110,21 +114,11 @@ export default function App() {
       setLeaveList(c || []);
       setSalaryList(g || []);
       if (k) setOfficeConfig(k);
-
-      // Default active employee jika belum ada
-      if (!currentEmployee && p && p.length > 0) {
-        setCurrentEmployee(p[0]);
-      } else if (currentEmployee && p) {
-        // Update data active employee jika berubah
-        const updatedSelf = p.find(item => item.id === currentEmployee.id);
-        if (updatedSelf) setCurrentEmployee(updatedSelf);
-      }
-
       setDbStatus(getDatabaseStatus());
     } catch (err) {
       console.error('Error loading data:', err);
     }
-  }, [currentEmployee]);
+  }, []);
 
   // Initial Load & Realtime subscription
   useEffect(() => {
