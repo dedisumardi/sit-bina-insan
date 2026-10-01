@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import PortalAuth from './components/PortalAuth';
 import Dashboard from './components/Dashboard';
 import PegawaiList from './components/PegawaiList';
 import AbsensiRadius from './components/AbsensiRadius';
@@ -47,8 +48,15 @@ export default function App() {
     return localStorage.getItem('sit_theme') || 'light';
   });
 
-  // Role & Active User
-  const [currentRole, setCurrentRole] = useState('admin'); // 'admin' | 'pegawai'
+  // Portal & Role State ('admin' | 'pegawai' | null for portal selector)
+  const [activePortal, setActivePortal] = useState(() => {
+    return localStorage.getItem('sit_active_portal') || null;
+  });
+  const currentRole = activePortal || 'admin';
+  const setCurrentRole = (role) => {
+    setActivePortal(role);
+    localStorage.setItem('sit_active_portal', role);
+  };
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
   // Active Tab
@@ -205,9 +213,34 @@ export default function App() {
     showToast('Konfigurasi Disimpan', 'Titik koordinat dan radius sekolah berhasil diperbarui.');
   };
 
-  // Badge counters
-  const pendingLeavesCount = leaveList.filter(l => l.status === 'Menunggu Persetujuan').length;
-  const pendingSalaryCount = salaryList.filter(s => s.status === 'Menunggu Persetujuan').length;
+  // If no portal is chosen, display the Portal Selection Screen
+  if (!activePortal) {
+    return (
+      <div className="app-container">
+        <PortalAuth 
+          employees={employees}
+          onSelectPortal={(portal, emp) => {
+            setActivePortal(portal);
+            localStorage.setItem('sit_active_portal', portal);
+            if (emp) setSelectedEmployeeId(emp.id);
+            setActiveTab('dashboard');
+          }}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          dbStatus={dbStatus}
+          onOpenDbModal={() => setIsDbModalOpen(true)}
+        />
+
+        {isDbModalOpen && (
+          <DatabaseSettingsModal 
+            dbStatus={dbStatus}
+            onClose={() => setIsDbModalOpen(false)}
+            onRefreshData={loadAllData}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="app-layout">
@@ -230,6 +263,10 @@ export default function App() {
         toggleTheme={toggleTheme}
         isMobileOpen={isMobileSidebarOpen}
         setIsMobileOpen={setIsMobileSidebarOpen}
+        onLogoutPortal={() => {
+          setActivePortal(null);
+          localStorage.removeItem('sit_active_portal');
+        }}
       />
 
       {/* Main Content Area */}

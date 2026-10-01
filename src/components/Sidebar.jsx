@@ -11,10 +11,10 @@ import {
   Settings, 
   Moon, 
   Sun, 
-  Sparkles,
-  ChevronRight,
+  LogOut,
+  X,
   ShieldCheck,
-  X
+  CheckCircle2
 } from 'lucide-react';
 
 const GithubIcon = ({ size = 16 }) => (
@@ -27,7 +27,6 @@ export default function Sidebar({
   activeTab,
   setActiveTab,
   currentRole,
-  setCurrentRole,
   currentEmployee,
   setCurrentEmployee,
   employees,
@@ -40,7 +39,8 @@ export default function Sidebar({
   theme,
   toggleTheme,
   isMobileOpen,
-  setIsMobileOpen
+  setIsMobileOpen,
+  onLogoutPortal
 }) {
   const pendingLeaves = leaveList.filter(l => l.status === 'Menunggu Persetujuan').length;
   const pendingSalaries = salaryList.filter(s => s.status === 'Menunggu Persetujuan').length;
@@ -49,6 +49,8 @@ export default function Sidebar({
     setActiveTab(tab);
     if (setIsMobileOpen) setIsMobileOpen(false);
   };
+
+  const isAdmin = currentRole === 'admin';
 
   return (
     <>
@@ -60,14 +62,18 @@ export default function Sidebar({
         />
       )}
 
-      <aside className={`app-sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
+      <aside className={`app-sidebar ${isMobileOpen ? 'mobile-open' : ''} ${isAdmin ? 'sidebar-admin' : 'sidebar-pegawai'}`}>
         {/* Brand Header */}
         <div className="sidebar-brand">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <img src="/logo.jpg" alt="Logo SIT Bina Insan" className="sidebar-logo-img" />
             <div>
-              <h2 className="sidebar-brand-title">SIT BINA INSAN</h2>
-              <p className="sidebar-brand-sub">SIMPEG & Presensi Radius</p>
+              <h2 className="sidebar-brand-title">
+                {isAdmin ? 'SIMPEG ADMIN' : 'PORTAL GURU'}
+              </h2>
+              <p className="sidebar-brand-sub">
+                {isAdmin ? 'Panel Pimpinan Yayasan' : 'SIT Bina Insan'}
+              </p>
             </div>
           </div>
           {isMobileOpen && (
@@ -83,7 +89,7 @@ export default function Sidebar({
         </div>
 
         {/* Real-time Indicator Pill */}
-        <div style={{ padding: '0 16px 12px' }}>
+        <div style={{ padding: '0 16px 10px' }}>
           <button 
             type="button" 
             className="sidebar-realtime-pill" 
@@ -92,53 +98,52 @@ export default function Sidebar({
           >
             <span className="pulse-dot"></span>
             <span style={{ flex: 1, textAlign: 'left' }}>
-              {dbStatus.isSupabase ? 'Cloud Supabase Live' : 'Real-Time Sync Aktif'}
+              {dbStatus.isSupabase ? 'Cloud Supabase' : 'Real-Time Sync'}
             </span>
             <Database size={13} style={{ opacity: 0.7 }} />
           </button>
         </div>
 
-        {/* Role Switcher Box */}
-        <div style={{ padding: '0 16px 16px' }}>
-          <div className="role-switcher-box" style={{ width: '100%', justifyContent: 'space-between' }}>
-            <button 
-              type="button"
-              className={`role-btn ${currentRole === 'admin' ? 'active' : ''}`}
-              onClick={() => setCurrentRole('admin')}
-              style={{ flex: 1, justifyContent: 'center' }}
-            >
-              <Building2 size={13} />
-              <span>Admin / HRD</span>
-            </button>
-            <button 
-              type="button"
-              className={`role-btn ${currentRole === 'pegawai' ? 'active' : ''}`}
-              onClick={() => setCurrentRole('pegawai')}
-              style={{ flex: 1, justifyContent: 'center' }}
-            >
-              <UserCheck size={13} />
-              <span>Pegawai</span>
-            </button>
-          </div>
+        {/* Portal Info Badge / Active Pegawai Card */}
+        <div style={{ padding: '0 16px 14px' }}>
+          {isAdmin ? (
+            <div style={{ padding: '8px 12px', background: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.25)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'var(--accent-gold-700)' }}>
+              <ShieldCheck size={16} />
+              <strong style={{ fontWeight: 700 }}>Akses Administrator & HRD</strong>
+            </div>
+          ) : (
+            <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-color)', borderRadius: 10, padding: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <img 
+                  src={currentEmployee?.foto_url || '/logo.jpg'} 
+                  alt={currentEmployee?.nama} 
+                  className="avatar" 
+                  style={{ width: 36, height: 36 }}
+                />
+                <div style={{ overflow: 'hidden', flex: 1 }}>
+                  <strong style={{ display: 'block', fontSize: '0.82rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                    {currentEmployee?.nama}
+                  </strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--primary-600)', fontWeight: 600 }}>
+                    {currentEmployee?.nip}
+                  </span>
+                </div>
+              </div>
 
-          {/* If Pegawai Mode, select which employee */}
-          {currentRole === 'pegawai' && (
-            <div style={{ marginTop: 10 }}>
-              <label style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700, textTransform: 'uppercase' }}>
-                Akun Pegawai:
-              </label>
+              {/* Selector to switch employee persona */}
               <select 
                 className="user-select-dropdown"
-                style={{ width: '100%' }}
+                style={{ width: '100%', fontSize: '0.75rem', padding: '4px 8px' }}
                 value={currentEmployee?.id || ''}
                 onChange={(e) => {
                   const found = employees.find(p => p.id === e.target.value);
                   if (found) setCurrentEmployee(found);
                 }}
+                title="Ganti persona pegawai untuk simulasi"
               >
                 {employees.map(p => (
                   <option key={p.id} value={p.id}>
-                    👤 {p.nama}
+                    Ganti: {p.nama}
                   </option>
                 ))}
               </select>
@@ -146,9 +151,11 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Navigation Menu Links */}
+        {/* ================= NAVIGATION MENU ================= */}
         <nav className="sidebar-nav">
-          <div className="sidebar-nav-label">Menu Utama</div>
+          <div className="sidebar-nav-label">
+            {isAdmin ? 'Menu Manajemen' : 'Menu Pegawai'}
+          </div>
 
           <button 
             type="button"
@@ -156,40 +163,51 @@ export default function Sidebar({
             onClick={() => handleNavClick('dashboard')}
           >
             <LayoutDashboard size={18} className="nav-icon" />
-            <span className="nav-text">Dashboard Utama</span>
-          </button>
-
-          <button 
-            type="button"
-            className={`sidebar-nav-item ${activeTab === 'pegawai' ? 'active' : ''}`}
-            onClick={() => handleNavClick('pegawai')}
-          >
-            <Users size={18} className="nav-icon" />
-            <span className="nav-text">Data Pegawai</span>
-            <span className="sidebar-counter" style={{ background: 'var(--primary-600)' }}>
-              {employees.length}
+            <span className="nav-text">
+              {isAdmin ? 'Dashboard Rekap' : 'Beranda Saya'}
             </span>
           </button>
 
+          {/* Menu Khusus Admin: Kelola Data Pegawai */}
+          {isAdmin && (
+            <button 
+              type="button"
+              className={`sidebar-nav-item ${activeTab === 'pegawai' ? 'active' : ''}`}
+              onClick={() => handleNavClick('pegawai')}
+            >
+              <Users size={18} className="nav-icon" />
+              <span className="nav-text">Data Pegawai</span>
+              <span className="sidebar-counter" style={{ background: 'var(--primary-600)' }}>
+                {employees.length}
+              </span>
+            </button>
+          )}
+
+          {/* Menu Absensi Radius */}
           <button 
             type="button"
             className={`sidebar-nav-item ${activeTab === 'absensi' ? 'active' : ''}`}
             onClick={() => handleNavClick('absensi')}
           >
             <MapPin size={18} className="nav-icon" />
-            <span className="nav-text">Absensi Radius</span>
+            <span className="nav-text">
+              {isAdmin ? 'Monitoring Absensi' : 'Presensi Radius GPS'}
+            </span>
             <span className="badge badge-success" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
               GPS
             </span>
           </button>
 
+          {/* Menu Cuti & Izin */}
           <button 
             type="button"
             className={`sidebar-nav-item ${activeTab === 'cuti' ? 'active' : ''}`}
             onClick={() => handleNavClick('cuti')}
           >
             <CalendarCheck size={18} className="nav-icon" />
-            <span className="nav-text">Pengajuan Cuti & Izin</span>
+            <span className="nav-text">
+              {isAdmin ? 'Verifikasi Cuti & Izin' : 'Pengajuan Cuti & Izin'}
+            </span>
             {pendingLeaves > 0 && (
               <span className="sidebar-counter" style={{ background: 'var(--accent-gold-500)' }}>
                 {pendingLeaves}
@@ -197,13 +215,16 @@ export default function Sidebar({
             )}
           </button>
 
+          {/* Menu Kenaikan Gaji */}
           <button 
             type="button"
             className={`sidebar-nav-item ${activeTab === 'gaji' ? 'active' : ''}`}
             onClick={() => handleNavClick('gaji')}
           >
             <TrendingUp size={18} className="nav-icon" />
-            <span className="nav-text">Kenaikan Gaji</span>
+            <span className="nav-text">
+              {isAdmin ? 'Evaluasi Kenaikan Gaji' : 'Kenaikan Gaji Saya'}
+            </span>
             {pendingSalaries > 0 && (
               <span className="sidebar-counter" style={{ background: '#8b5cf6' }}>
                 {pendingSalaries}
@@ -211,17 +232,19 @@ export default function Sidebar({
             )}
           </button>
 
-          <div className="sidebar-nav-label" style={{ marginTop: 18 }}>Pengaturan & Bantuan</div>
-
-          {currentRole === 'admin' && (
-            <button 
-              type="button"
-              className="sidebar-nav-item"
-              onClick={onOpenSettingsModal}
-            >
-              <Settings size={18} className="nav-icon" />
-              <span className="nav-text">Radius & Jam Kerja</span>
-            </button>
+          {/* Menu Khusus Admin: Pengaturan Radius */}
+          {isAdmin && (
+            <>
+              <div className="sidebar-nav-label" style={{ marginTop: 16 }}>Pengaturan Sistem</div>
+              <button 
+                type="button"
+                className="sidebar-nav-item"
+                onClick={onOpenSettingsModal}
+              >
+                <Settings size={18} className="nav-icon" />
+                <span className="nav-text">Radius & Jam Kerja</span>
+              </button>
+            </>
           )}
 
           <button 
@@ -243,7 +266,7 @@ export default function Sidebar({
           </button>
         </nav>
 
-        {/* Sidebar Footer User & Theme Profile */}
+        {/* Sidebar Footer */}
         <div className="sidebar-footer">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
@@ -253,29 +276,23 @@ export default function Sidebar({
               type="button" 
               className="theme-toggle-btn"
               onClick={toggleTheme}
-              style={{ width: 32, height: 32 }}
-              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+              style={{ width: 30, height: 30 }}
+              title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
             >
               {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           </div>
 
-          <div className="sidebar-user-card">
-            <img 
-              src={currentEmployee?.foto_url || '/logo.jpg'} 
-              alt="Profil User" 
-              className="avatar"
-              style={{ width: 36, height: 36 }}
-            />
-            <div style={{ overflow: 'hidden', flex: 1 }}>
-              <strong style={{ display: 'block', fontSize: '0.82rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                {currentRole === 'admin' ? 'Administrator HRD' : currentEmployee?.nama}
-              </strong>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>
-                {currentRole === 'admin' ? 'Yayasan Bina Insan' : currentEmployee?.jabatan}
-              </span>
-            </div>
-          </div>
+          {/* Tombol Logout / Keluar Portal */}
+          <button 
+            type="button" 
+            className="btn btn-sm btn-secondary"
+            onClick={onLogoutPortal}
+            style={{ width: '100%', justifyContent: 'center', gap: 6, fontWeight: 700, color: 'var(--color-danger)', borderColor: 'rgba(239, 68, 68, 0.25)' }}
+          >
+            <LogOut size={14} />
+            <span>Keluar / Ganti Portal</span>
+          </button>
         </div>
       </aside>
     </>
