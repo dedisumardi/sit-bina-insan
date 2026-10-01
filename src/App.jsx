@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import Topbar from './components/Topbar';
 import Dashboard from './components/Dashboard';
 import PegawaiList from './components/PegawaiList';
 import AbsensiRadius from './components/AbsensiRadius';
@@ -72,6 +73,7 @@ export default function App() {
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState(null);
@@ -208,143 +210,98 @@ export default function App() {
   const pendingSalaryCount = salaryList.filter(s => s.status === 'Menunggu Persetujuan').length;
 
   return (
-    <div className="app-container">
-      {/* Top Navbar */}
-      <Navbar 
+    <div className="app-layout">
+      {/* Left Sidebar Menu */}
+      <Sidebar 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         currentRole={currentRole}
         setCurrentRole={setCurrentRole}
         currentEmployee={currentEmployee}
         setCurrentEmployee={setCurrentEmployee}
         employees={employees}
+        leaveList={leaveList}
+        salaryList={salaryList}
         dbStatus={dbStatus}
         onOpenDbModal={() => setIsDbModalOpen(true)}
         onOpenDeployModal={() => setIsDeployModalOpen(true)}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
         theme={theme}
         toggleTheme={toggleTheme}
+        isMobileOpen={isMobileSidebarOpen}
+        setIsMobileOpen={setIsMobileSidebarOpen}
       />
 
-      {/* Main Body Content */}
-      <main className="main-content">
-        {/* Navigation Tabs */}
-        <div className="nav-tabs-wrapper">
-          <button 
-            type="button" 
-            className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <LayoutDashboard size={17} />
-            <span>Dashboard Utama</span>
-          </button>
+      {/* Main Content Area */}
+      <div className="main-wrapper">
+        <Topbar 
+          activeTab={activeTab}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+          dbStatus={dbStatus}
+          onOpenDbModal={() => setIsDbModalOpen(true)}
+          currentRole={currentRole}
+          currentEmployee={currentEmployee}
+        />
 
-          <button 
-            type="button" 
-            className={`tab-btn ${activeTab === 'pegawai' ? 'active' : ''}`}
-            onClick={() => setActiveTab('pegawai')}
-          >
-            <Users size={17} />
-            <span>Data Pegawai</span>
-            <span className="badge-counter" style={{ background: 'var(--primary-600)' }}>
-              {employees.length}
-            </span>
-          </button>
+        <main className="main-content">
+          {activeTab === 'dashboard' && (
+            <Dashboard 
+              currentRole={currentRole}
+              currentEmployee={currentEmployee}
+              employees={employees}
+              attendanceList={attendanceList}
+              leaveList={leaveList}
+              salaryList={salaryList}
+              officeConfig={officeConfig}
+              setActiveTab={setActiveTab}
+            />
+          )}
 
-          <button 
-            type="button" 
-            className={`tab-btn ${activeTab === 'absensi' ? 'active' : ''}`}
-            onClick={() => setActiveTab('absensi')}
-          >
-            <MapPin size={17} />
-            <span>Absensi Radius Geofence</span>
-          </button>
+          {activeTab === 'pegawai' && (
+            <PegawaiList 
+              employees={employees}
+              onAddEmployee={handleAddEmployee}
+              onUpdateEmployee={handleUpdateEmployee}
+              onDeleteEmployee={handleDeleteEmployee}
+              currentRole={currentRole}
+            />
+          )}
 
-          <button 
-            type="button" 
-            className={`tab-btn ${activeTab === 'cuti' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cuti')}
-          >
-            <CalendarCheck size={17} />
-            <span>Pengajuan Cuti & Izin</span>
-            {pendingLeavesCount > 0 && (
-              <span className="badge-counter">
-                {pendingLeavesCount}
-              </span>
-            )}
-          </button>
+          {activeTab === 'absensi' && (
+            <AbsensiRadius 
+              currentEmployee={currentEmployee}
+              attendanceList={attendanceList}
+              officeConfig={officeConfig}
+              onAddAbsensi={handleAddAbsensi}
+              onUpdateAbsensiPulang={handleUpdateAbsensiPulang}
+              onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+              currentRole={currentRole}
+            />
+          )}
 
-          <button 
-            type="button" 
-            className={`tab-btn ${activeTab === 'gaji' ? 'active' : ''}`}
-            onClick={() => setActiveTab('gaji')}
-          >
-            <TrendingUp size={17} />
-            <span>Pengajuan Kenaikan Gaji</span>
-            {pendingSalaryCount > 0 && (
-              <span className="badge-counter" style={{ background: '#8b5cf6' }}>
-                {pendingSalaryCount}
-              </span>
-            )}
-          </button>
-        </div>
+          {activeTab === 'cuti' && (
+            <CutiIzin 
+              currentEmployee={currentEmployee}
+              employees={employees}
+              leaveList={leaveList}
+              onAddLeave={handleAddLeave}
+              onUpdateLeaveStatus={handleUpdateLeaveStatus}
+              currentRole={currentRole}
+            />
+          )}
 
-        {/* Tab Content Display */}
-        {activeTab === 'dashboard' && (
-          <Dashboard 
-            currentRole={currentRole}
-            currentEmployee={currentEmployee}
-            employees={employees}
-            attendanceList={attendanceList}
-            leaveList={leaveList}
-            salaryList={salaryList}
-            officeConfig={officeConfig}
-            setActiveTab={setActiveTab}
-          />
-        )}
-
-        {activeTab === 'pegawai' && (
-          <PegawaiList 
-            employees={employees}
-            onAddEmployee={handleAddEmployee}
-            onUpdateEmployee={handleUpdateEmployee}
-            onDeleteEmployee={handleDeleteEmployee}
-            currentRole={currentRole}
-          />
-        )}
-
-        {activeTab === 'absensi' && (
-          <AbsensiRadius 
-            currentEmployee={currentEmployee}
-            attendanceList={attendanceList}
-            officeConfig={officeConfig}
-            onAddAbsensi={handleAddAbsensi}
-            onUpdateAbsensiPulang={handleUpdateAbsensiPulang}
-            onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
-            currentRole={currentRole}
-          />
-        )}
-
-        {activeTab === 'cuti' && (
-          <CutiIzin 
-            currentEmployee={currentEmployee}
-            employees={employees}
-            leaveList={leaveList}
-            onAddLeave={handleAddLeave}
-            onUpdateLeaveStatus={handleUpdateLeaveStatus}
-            currentRole={currentRole}
-          />
-        )}
-
-        {activeTab === 'gaji' && (
-          <KenaikanGaji 
-            currentEmployee={currentEmployee}
-            employees={employees}
-            salaryList={salaryList}
-            onAddSalaryRequest={handleAddSalaryRequest}
-            onUpdateSalaryStatus={handleUpdateSalaryStatus}
-            currentRole={currentRole}
-          />
-        )}
-      </main>
+          {activeTab === 'gaji' && (
+            <KenaikanGaji 
+              currentEmployee={currentEmployee}
+              employees={employees}
+              salaryList={salaryList}
+              onAddSalaryRequest={handleAddSalaryRequest}
+              onUpdateSalaryStatus={handleUpdateSalaryStatus}
+              currentRole={currentRole}
+            />
+          )}
+        </main>
+      </div>
 
       {/* Floating Real-time Toast Notification */}
       {toastMessage && (
