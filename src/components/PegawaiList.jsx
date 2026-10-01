@@ -43,6 +43,7 @@ export default function PegawaiList({
     nip: '',
     nama: '',
     email: '',
+    password: 'bina123',
     no_hp: '',
     jabatan: '',
     divisi: 'SD Islam Terpadu',
@@ -71,6 +72,7 @@ export default function PegawaiList({
     setFormData({
       ...initialFormData,
       nip: autoNIP,
+      password: 'bina123',
       foto_url: `https://images.unsplash.com/photo-${1534528741775 + Math.floor(Math.random() * 1000)}?w=150&auto=format&fit=crop&q=80`
     });
     setIsModalOpen(true);
@@ -83,6 +85,7 @@ export default function PegawaiList({
       nip: p.nip || '',
       nama: p.nama || '',
       email: p.email || '',
+      password: p.password || 'bina123',
       no_hp: p.no_hp || '',
       jabatan: p.jabatan || '',
       divisi: p.divisi || 'SD Islam Terpadu',
@@ -556,6 +559,20 @@ export default function PegawaiList({
                   />
                   <span className="form-help">Bisa dikosongkan untuk menggunakan avatar default</span>
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700 }}>
+                    Kata Sandi Akun Login Portal <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>(Default: bina123)</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="bina123"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <span className="form-help">Digunakan pegawai ini untuk login ke Portal Pegawai mandiri</span>
+                </div>
               </div>
 
               <div className="modal-footer">
@@ -623,6 +640,30 @@ export default function PegawaiList({
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Sisa Cuti Tahunan:</span>
                   <strong style={{ color: 'var(--primary-600)' }}>{detailPegawai.sisa_cuti || 12} Hari Kerja</strong>
+                </div>
+              </div>
+
+              {/* Box Kredensial Login Pegawai */}
+              <div style={{ 
+                marginTop: 14, 
+                padding: '12px 16px', 
+                background: 'rgba(16, 185, 129, 0.08)', 
+                borderRadius: 12, 
+                border: '1px solid rgba(16, 185, 129, 0.25)', 
+                textAlign: 'left' 
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <strong style={{ fontSize: '0.82rem', color: 'var(--primary-700)' }}>
+                    🔑 Kredensial Login Akun Pegawai:
+                  </strong>
+                  <span className="badge badge-success" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+                    Siap Digunakan
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div><strong>Username / NIP:</strong> <code style={{ color: 'var(--text-main)', fontWeight: 700 }}>{detailPegawai.nip}</code></div>
+                  <div><strong>Email Login:</strong> {detailPegawai.email || '-'}</div>
+                  <div><strong>Kata Sandi Akun:</strong> <code style={{ color: 'var(--primary-700)', fontWeight: 700 }}>{detailPegawai.password || 'bina123'}</code></div>
                 </div>
               </div>
             </div>

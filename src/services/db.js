@@ -26,6 +26,7 @@ const INITIAL_PEGAWAI = [
     nip: 'BI-2021001',
     nama: 'Ustadz Ahmad Fauzi, M.Pd.',
     email: 'ahmad.fauzi@binainsan.sch.id',
+    password: 'bina123',
     no_hp: '081234567801',
     jabatan: 'Kepala Sekolah SDIT',
     divisi: 'SD Islam Terpadu',
@@ -40,6 +41,7 @@ const INITIAL_PEGAWAI = [
     nip: 'BI-2022015',
     nama: 'Ustadzah Siti Nurhaliza, S.Pd.I',
     email: 'siti.nurhaliza@binainsan.sch.id',
+    password: 'bina123',
     no_hp: '081234567802',
     jabatan: 'Guru Tahfidz & PAI',
     divisi: 'SMP Islam Terpadu',
@@ -54,6 +56,7 @@ const INITIAL_PEGAWAI = [
     nip: 'BI-2022042',
     nama: 'Muhammad Rizky Pratama, S.Kom.',
     email: 'rizky.pratama@binainsan.sch.id',
+    password: 'bina123',
     no_hp: '081234567803',
     jabatan: 'Staff IT & Kurikulum Digital',
     divisi: 'Manajemen Yayasan',
@@ -68,6 +71,7 @@ const INITIAL_PEGAWAI = [
     nip: 'BI-2023008',
     nama: 'Fatimah Az-Zahra, S.Si.',
     email: 'fatimah.zahra@binainsan.sch.id',
+    password: 'bina123',
     no_hp: '081234567804',
     jabatan: 'Guru Sains & Matematika',
     divisi: 'SMA Islam Terpadu',
@@ -82,6 +86,7 @@ const INITIAL_PEGAWAI = [
     nip: 'BI-2023019',
     nama: 'Ustadz Hendra Gunawan, Lc.',
     email: 'hendra.gunawan@binainsan.sch.id',
+    password: 'bina123',
     no_hp: '081234567805',
     jabatan: 'Guru Bahasa Arab & Hadits',
     divisi: 'SMA Islam Terpadu',
@@ -249,7 +254,24 @@ if (broadcast) {
 
 // Inisialisasi data lokal pertama kali
 function ensureLocalData() {
-  if (!localStorage.getItem('sit_pegawai')) setLocalItem('sit_pegawai', INITIAL_PEGAWAI);
+  const existingPegawai = getLocalItem('sit_pegawai', null);
+  if (!existingPegawai || existingPegawai.length === 0) {
+    setLocalItem('sit_pegawai', INITIAL_PEGAWAI);
+  } else {
+    // Pastikan seluruh data pegawai lama yang tersimpan di localStorage memiliki password
+    let updated = false;
+    const migrated = existingPegawai.map((p) => {
+      if (!p.password) {
+        updated = true;
+        return { ...p, password: 'bina123' };
+      }
+      return p;
+    });
+    if (updated) {
+      setLocalItem('sit_pegawai', migrated);
+    }
+  }
+
   if (!localStorage.getItem('sit_absensi')) setLocalItem('sit_absensi', INITIAL_ABSENSI);
   if (!localStorage.getItem('sit_cuti')) setLocalItem('sit_cuti', INITIAL_CUTI);
   if (!localStorage.getItem('sit_gaji')) setLocalItem('sit_gaji', INITIAL_GAJI);
@@ -276,6 +298,7 @@ export async function addPegawai(pegawaiData) {
   const newPegawai = {
     id: 'peg-' + Date.now(),
     sisa_cuti: 12,
+    password: 'bina123',
     tanggal_masuk: new Date().toISOString().split('T')[0],
     ...pegawaiData
   };
@@ -634,4 +657,91 @@ export function resetToSampleData() {
   setLocalItem('sit_kantor', DEFAULT_KONFIGURASI);
   notifySubscribers({ table: 'all', action: 'RESET' });
   return true;
+}
+
+// ==========================================
+// AUTENTIKASI PEGAWAI & ADMIN
+// ==========================================
+export async function authenticatePegawai(identifier, password) {
+  const allPegawai = await getPegawai();
+  const cleanId = (identifier || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  if (!cleanId) {
+    return { success: false, message: 'Masukkan NIP atau Email resmi Anda.' };
+  }
+  if (!cleanPass) {
+    return { success: false, message: 'Masukkan kata sandi (password) akun Anda.' };
+  }
+
+  const found = allPegawai.find(
+    (p) =>
+      (p.nip && p.nip.trim().toLowerCase() === cleanId) ||
+      (p.email && p.email.trim().toLowerCase() === cleanId)
+  );
+
+  if (!found) {
+    return {
+      success: false,
+      message: `Akun dengan NIP atau Email "${identifier}" tidak terdaftar dalam SIMPEG SIT Bina Insan.`
+    };
+  }
+
+  const expectedPass = found.password || 'bina123';
+  if (cleanPass !== expectedPass) {
+    return {
+      success: false,
+      message: 'Kata sandi salah. Silakan periksa kembali atau gunakan bantuan akun demo.'
+    };
+  }
+
+  return {
+    success: true,
+    employee: found
+  };
+}
+
+export function authenticateAdmin(username, password) {
+  const cleanUser = (username || '').trim().toLowerCase();
+  const cleanPass = (password || '').trim();
+
+  if (!cleanUser) {
+    return { success: false, message: 'Masukkan username atau email Admin.' };
+  }
+  if (!cleanPass) {
+    return { success: false, message: 'Masukkan kata sandi Admin.' };
+  }
+
+  const validUsers = ['admin', 'admin@binainsan.sch.id', 'yayasan', 'hrd'];
+  const isValidUser = validUsers.includes(cleanUser);
+  const isValidPass = cleanPass === 'admin123';
+
+  if (!isValidUser || !isValidPass) {
+    return {
+      success: false,
+      message: 'Kredensial Admin tidak valid. Gunakan username: "admin" dan password: "admin123".'
+    };
+  }
+
+  return { success: true };
+}
+
+export async function changePegawaiPassword(pegawaiId, oldPassword, newPassword) {
+  const allPegawai = await getPegawai();
+  const found = allPegawai.find((p) => p.id === pegawaiId);
+  if (!found) {
+    return { success: false, message: 'Akun pegawai tidak ditemukan.' };
+  }
+
+  const currentPass = found.password || 'bina123';
+  if (oldPassword !== currentPass) {
+    return { success: false, message: 'Kata sandi lama yang Anda masukkan tidak sesuai.' };
+  }
+
+  if (!newPassword || newPassword.length < 4) {
+    return { success: false, message: 'Kata sandi baru minimal harus 4 karakter.' };
+  }
+
+  await updatePegawai(pegawaiId, { password: newPassword });
+  return { success: true, message: 'Kata sandi berhasil diubah! Gunakan kata sandi baru untuk login berikutnya.' };
 }

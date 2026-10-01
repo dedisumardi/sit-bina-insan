@@ -14,7 +14,8 @@ import {
   LogOut,
   X,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Key
 } from 'lucide-react';
 
 const GithubIcon = ({ size = 16 }) => (
@@ -36,6 +37,7 @@ export default function Sidebar({
   onOpenDbModal,
   onOpenDeployModal,
   onOpenSettingsModal,
+  onOpenGantiPasswordModal,
   theme,
   toggleTheme,
   isMobileOpen,
@@ -130,23 +132,32 @@ export default function Sidebar({
                 </div>
               </div>
 
-              {/* Selector to switch employee persona */}
-              <select 
-                className="user-select-dropdown"
-                style={{ width: '100%', fontSize: '0.75rem', padding: '4px 8px' }}
-                value={currentEmployee?.id || ''}
-                onChange={(e) => {
-                  const found = employees.find(p => p.id === e.target.value);
-                  if (found) setCurrentEmployee(found);
-                }}
-                title="Ganti persona pegawai untuk simulasi"
-              >
-                {employees.map(p => (
-                  <option key={p.id} value={p.id}>
-                    Ganti: {p.nama}
-                  </option>
-                ))}
-              </select>
+              {/* Status Akun Terverifikasi & Tombol Ganti Sandi */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: 8, marginTop: 4 }}>
+                <span className="badge badge-success" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+                  ✓ Login Aktif
+                </span>
+                <button
+                  type="button"
+                  onClick={onOpenGantiPasswordModal}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '0.72rem',
+                    color: 'var(--primary-600)',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontWeight: 600,
+                    padding: '2px 4px'
+                  }}
+                  title="Ganti kata sandi akun Anda"
+                >
+                  <Key size={12} />
+                  <span>Ganti Sandi</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

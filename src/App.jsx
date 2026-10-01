@@ -10,6 +10,7 @@ import KenaikanGaji from './components/KenaikanGaji';
 import PengaturanKantorModal from './components/PengaturanKantorModal';
 import DatabaseSettingsModal from './components/DatabaseSettingsModal';
 import PanduanDeployModal from './components/PanduanDeployModal';
+import GantiPasswordModal from './components/GantiPasswordModal';
 
 import { 
   getPegawai, 
@@ -57,7 +58,9 @@ export default function App() {
     setActivePortal(role);
     localStorage.setItem('sit_active_portal', role);
   };
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(() => {
+    return localStorage.getItem('sit_logged_pegawai_id') || null;
+  });
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'pegawai' | 'absensi' | 'cuti' | 'gaji'
@@ -82,6 +85,7 @@ export default function App() {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isGantiPasswordOpen, setIsGantiPasswordOpen] = useState(false);
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState(null);
@@ -222,7 +226,14 @@ export default function App() {
           onSelectPortal={(portal, emp) => {
             setActivePortal(portal);
             localStorage.setItem('sit_active_portal', portal);
-            if (emp) setSelectedEmployeeId(emp.id);
+            if (emp) {
+              setSelectedEmployeeId(emp.id);
+              localStorage.setItem('sit_logged_pegawai_id', emp.id);
+              showToast('Login Berhasil', `Ahlan wa Sahlan, ${emp.nama}! Anda berhasil login ke Portal Pegawai.`);
+            } else {
+              localStorage.removeItem('sit_logged_pegawai_id');
+              showToast('Login Berhasil', 'Ahlan wa Sahlan! Anda berhasil masuk sebagai Administrator.');
+            }
             setActiveTab('dashboard');
           }}
           theme={theme}
@@ -259,13 +270,17 @@ export default function App() {
         onOpenDbModal={() => setIsDbModalOpen(true)}
         onOpenDeployModal={() => setIsDeployModalOpen(true)}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onOpenGantiPasswordModal={() => setIsGantiPasswordOpen(true)}
         theme={theme}
         toggleTheme={toggleTheme}
         isMobileOpen={isMobileSidebarOpen}
         setIsMobileOpen={setIsMobileSidebarOpen}
         onLogoutPortal={() => {
           setActivePortal(null);
+          setSelectedEmployeeId(null);
           localStorage.removeItem('sit_active_portal');
+          localStorage.removeItem('sit_logged_pegawai_id');
+          showToast('Logout Berhasil', 'Anda telah keluar dari sesi akun.');
         }}
       />
 
@@ -373,6 +388,17 @@ export default function App() {
       {isDeployModalOpen && (
         <PanduanDeployModal 
           onClose={() => setIsDeployModalOpen(false)}
+        />
+      )}
+
+      {isGantiPasswordOpen && currentEmployee && (
+        <GantiPasswordModal 
+          currentEmployee={currentEmployee}
+          onClose={() => setIsGantiPasswordOpen(false)}
+          onSuccess={(msg) => {
+            loadAllData();
+            showToast('Kata Sandi Diperbarui', msg);
+          }}
         />
       )}
     </div>
